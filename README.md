@@ -32,10 +32,10 @@ Because of this process can take a while (there was about 180+ different busines
 Note: In this method you should log in into to Hever website, so you need to specify your credentials. 
 
 ### Using
-1. Run an instance of `redis`. I used a docker image, but you can run it any way you'd like it.
-2. Install the `redis`, `Selenium` and `python-dotenv` packages
+1. Run an instance of `redis`. I used a docker container, but you can run it any way you'd like it.
+2. Install python packages dependencies
     ```shell
-    pip install redis selenium python-dotenv
+    pip install -r yellow_requirements.txt
     ```
 3. Create a `.env` file and add your credentials inside (the `REDIS_HOST` is optional).
    ```dotenv

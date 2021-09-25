@@ -3,7 +3,7 @@ import csv
 import re
 import os
 import json
-import functools
+import argparse
 from time import sleep
 from typing import Tuple, List, Optional, Dict, Iterable
 
@@ -11,6 +11,7 @@ import redis
 from selenium.webdriver.remote.webelement import WebElement
 from selenium.webdriver import Chrome
 from dotenv import load_dotenv
+from retrying import retry
 
 
 __BASE_URL__ = 'https://www.hvr.co.il/site/pg/gift_card_company'
@@ -31,30 +32,6 @@ SN_PATTERN = re.compile(r'javascript:gotoBranches\((\d+)\)')
 
 logger = logging.getLogger('HvrCrawler')
 logger.addHandler(logging.StreamHandler())
-
-
-def with_retries(max_retries, sleep_time=1):
-    def wrapper(func):
-        @functools.wraps(func)
-        def _inner(*args, **kwargs):
-            _name = func.__name__
-            retries = 0
-            while True:
-                logger.debug('%s trying %d/%d', _name, retries, max_retries)
-                try:
-                    return func(*args, **kwargs)
-                except Exception as e:
-                    action = 'Abort' if retries == max_retries else 'Retry'
-                    method = logger.error if retries == max_retries else logger.warning
-                    method('%s failed (%d/%d retries). message: "%s"\n%s', _name, retries, max_retries, str(e), action)
-                    retries += 1
-                    if retries == max_retries:
-                        raise e
-                    sleep(sleep_time)
-                finally:
-                    logger.debug('%s Succeed (%d/%d retries)', _name, retries, max_retries)
-        return _inner
-    return wrapper
 
 
 def get(driver, url):
@@ -114,7 +91,7 @@ def crawl_company_branches(driver, sn, retries) -> List[Tuple[str, str]]:
 
     assert driver.current_url == url
 
-    @with_retries(retries)
+    @retry(wait_fixed=1000, stop_max_attempt_number=retries)
     def get_branches():
         # get branches list
         branches_elements = driver.find_element_by_xpath('//*[@id="branch-list"]').find_elements_by_xpath('*')
@@ -139,13 +116,11 @@ def parse_branch(element: WebElement) -> Optional[Tuple[str, str]]:
 
 
 def main(argv=None):
-    import argparse
-
     args_parser = argparse.ArgumentParser()
-    args_parser.add_argument('-o', required=True)
+    args_parser.add_argument('-o', metavar='outfile', type=argparse.FileType('a'), required=True, help='output csv file')
     args_parser.add_argument('--user-id')
     args_parser.add_argument('--password')
-    args_parser.add_argument('--redis-host', default=None)
+    args_parser.add_argument('--redis-host')
     args_parser.add_argument('--retries', type=int, default=20)
     args_parser.add_argument('--log-level', default='INFO')
     args = args_parser.parse_args(argv)
@@ -178,19 +153,20 @@ def main(argv=None):
                     r.set(DATA_KEY.format(sn), branches_str)
                     r.set(status_key, STATUS_OK)
 
-        logger.info('Creating CSV from results')
-        with open(args.o, 'a') as f:
-            writer = csv.writer(f)
-            # headers row
-            writer.writerow(('Name', 'Branch Name', 'Branch Address', 'Full Address'))
+        logger.info('Creating CSV from results in "%s"', args.o.name)
+        writer = csv.writer(args.o)
+        # headers row
+        writer.writerow(('Name', 'Branch Name', 'Branch Address', 'Full Branch Name'))
 
-            for ind, (company, sn) in enumerate(companies_sn.items(), 1):
-                branches_str = r.get(DATA_KEY.format(sn))
-                branches = json.loads(branches_str)
+        for ind, (company, sn) in enumerate(companies_sn.items(), 1):
+            branches_str = r.get(DATA_KEY.format(sn))
+            branches = json.loads(branches_str)
 
-                branches = filter(filter_internet_store, branches)
-                row = [(company, b_name, b_address, b_address + ' ' + b_name) for b_name, b_address in branches]
-                writer.writerows(row)
+            # filter out internet stores
+            branches = filter(filter_internet_store, branches)
+
+            for branch_name, branch_address in branches:
+                writer.writerow((company, branch_name, branch_address, f'{company} {branch_name}'))
 
         logger.info('Done!')
 
