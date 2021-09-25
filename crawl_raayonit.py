@@ -38,7 +38,7 @@ def main():
         try:
             div_id = 1
             while True:
-                xpath = __ID_PATTERN__.format(div_id)
+                xpath = __XPATH_PATTERN__.format(div_id)
                 logger.debug(f'={xpath=}')
                 e = driver.find_element_by_xpath(xpath)
                 name, address = parse_business(e)
