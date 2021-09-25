@@ -12,12 +12,12 @@ In this case, I just download the full page with the table of all restaurants an
 The `parse_blue.py` script just parse this HTML using `BeautifulSoup`.
 
 ### Using
-1. download the page as complete webpage into single HTML file.
-2. install `BeautifulSoup`
+1. Download the page as complete webpage into single HTML file.
+2. Install `BeautifulSoup`
     ```shell
     pip install bs4
     ```
-3. run script
+3. Run script
     ```shell
     python parse_blue.py /path/to/page.html -o result.csv
     ```
@@ -33,11 +33,11 @@ Note: In this method you should log in into to Hever website, so you need to spe
 
 ### Using
 1. Run an instance of `redis`. I used a docker image, but you can run it any way you'd like it.
-2. install the `redis`, `Selenium` and `python-dotenv` packages
+2. Install the `redis`, `Selenium` and `python-dotenv` packages
     ```shell
     pip install redis selenium python-dotenv
     ```
-3. create a `.env` file and add your credentials inside (the `REDIS_HOST` is optional).
+3. Create a `.env` file and add your credentials inside (the `REDIS_HOST` is optional).
    ```dotenv
    USER_ID=123456789
    PASSWORD=my-password
@@ -46,4 +46,20 @@ Note: In this method you should log in into to Hever website, so you need to spe
 4. Run the script
    ```shell
    python crawl_yellow.py -o yellow.csv
+   ```
+## Raayonit (רעיונית)
+
+Crawl the "Raayonit" restaurants from their website.
+
+This one also uses `Selenium` to crawl the website.
+
+### Usage
+
+1. Install `Selenium`
+   ```shell
+   pip install selenium
+   ```
+2. Run the script
+   ```shell
+   python crawl_raayonit.py -o result.csv
    ```

@@ -9,7 +9,7 @@ from selenium.common.exceptions import NoSuchElementException
 
 
 __URL__ = 'https://www.raayonit.co.il/club/?ClubNum=2&ClubVoucherTypeNum=17'
-__ID_PATTERN__ = '//*[@id="summary_row_{}"]'
+__XPATH_PATTERN__ = '//*[@id="summary_row_{}"]'
 
 logger = logging.getLogger('HvrRaayonitCrawler')
 logger.addHandler(logging.StreamHandler())
